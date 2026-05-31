@@ -1,24 +1,27 @@
 import numpy as np
 
+# 4 x 12 미로 환경
 class Environment():
     
     # 1. 미로밖(절벽), 길, 목적지와 보상 설정
-    cliff = -3
+    cliff = -100
     road = -1
     goal = 1
     
-    # 2. 목적지 좌표 설정
-    goal_position = [2,2]
+    # 2. 목적지 좌표 설정 (우측 하단)
+    goal_position = [3,11]
     
     # 3. 보상 리스트 숫자
-    reward_list = [[road,road,road],
-                   [road,road,road],
-                   [road,road,goal]]
+    reward_list = [[road,road,road,road,road,road,road,road,road,road,road,road],
+                   [road,road,road,road,road,road,road,road,road,road,road,road],
+                   [road,road,road,road,road,road,road,road,road,road,road,road],
+                   [road,road,road,road,road,road,road,road,road,road,road,goal]]
     
     # 4. 보상 리스트 문자
-    reward_list1 = [["road","road","road"],
-                    ["road","road","road"],
-                    ["road","road","goal"]]
+    reward_list1 = [["road","road","road","road","road","road","road","road","road","road","road","road"],
+                    ["road","road","road","road","road","road","road","road","road","road","road","road"],
+                    ["road","road","road","road","road","road","road","road","road","road","road","road"],
+                    ["road","road","road","road","road","road","road","road","road","road","road","goal"]]
     
     # 5. 보상 리스트를 array로 설정
     def __init__(self):
