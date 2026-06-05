@@ -1,0 +1,8 @@
+# 머신러닝 팀 프로젝트 실행 환경 설정
+# 설치 방법: pip install -r environment.txt
+
+numpy
+tensorflow
+keras
+matplotlib
+tqdm
