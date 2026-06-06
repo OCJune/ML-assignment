@@ -1,7 +1,7 @@
 import numpy as np
 import copy
 from keras.models import Sequential
-from keras.layers import Dense
+from keras.layers import Dense, Input
 from keras.optimizers import Adam
 
 class MCAgent:
@@ -36,13 +36,11 @@ class MCAgent:
         hidden_layers 파라미터를 통해 동적으로 모델 구조를 변경할 수 있게 설계했습니다.
         """
         model = Sequential()
-        for i, units in enumerate(self.hidden_layers):
-            if i == 0:
-                model.add(Dense(units, input_dim=self.state_size, activation='relu'))
-            else:
-                model.add(Dense(units, activation='relu'))
+        model.add(Input(shape=(self.state_size,)))
+        for units in self.hidden_layers:
+            model.add(Dense(units, activation='relu'))
         model.add(Dense(self.action_size, activation='linear'))
-        model.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
+        model.compile(loss='mse', optimizer=Adam(learning_rate=self.learning_rate))
         return model
 
     def set_pos(self, position):
@@ -66,7 +64,7 @@ class MCAgent:
         if np.random.rand() <= self.epsilon:
             return np.random.randint(self.action_size)
         
-        q_values = self.model.predict(state_onehot)
+        q_values = self.model.predict(state_onehot, verbose=0)
         return np.argmax(q_values[0])
 
     def append_sample(self, state, action, reward):
@@ -88,7 +86,7 @@ class MCAgent:
             G = reward + self.gamma * G
             
             state_onehot = self.state_to_onehot(state)
-            target = self.model.predict(state_onehot)
+            target = self.model.predict(state_onehot, verbose=0)
             target[0][action] = G # 해당 행동의 타겟을 G_t로 설정
             
             states.append(state_onehot[0])

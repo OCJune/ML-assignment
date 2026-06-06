@@ -1,6 +1,6 @@
 import numpy as np
 from keras.models import Sequential
-from keras.layers import Dense
+from keras.layers import Dense, Input
 from keras.optimizers import Adam
 
 class QLearningAgent:
@@ -33,13 +33,11 @@ class QLearningAgent:
         hidden_layers 파라미터를 통해 동적으로 모델 구조를 변경할 수 있게 설계했습니다.
         """
         model = Sequential()
-        for i, units in enumerate(self.hidden_layers):
-            if i == 0:
-                model.add(Dense(units, input_dim=self.state_size, activation='relu'))
-            else:
-                model.add(Dense(units, activation='relu'))
+        model.add(Input(shape=(self.state_size,)))
+        for units in self.hidden_layers:
+            model.add(Dense(units, activation='relu'))
         model.add(Dense(self.action_size, activation='linear'))
-        model.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
+        model.compile(loss='mse', optimizer=Adam(learning_rate=self.learning_rate))
         return model
 
     def set_pos(self, position):
@@ -63,7 +61,7 @@ class QLearningAgent:
         if np.random.rand() <= self.epsilon:
             return np.random.randint(self.action_size)
         
-        q_values = self.model.predict(state_onehot)
+        q_values = self.model.predict(state_onehot, verbose=0)
         return np.argmax(q_values[0])
 
     def train_model(self, state, action, reward, next_state, done):
@@ -74,13 +72,13 @@ class QLearningAgent:
         state_onehot = self.state_to_onehot(state)
         next_state_onehot = self.state_to_onehot(next_state)
         
-        target = self.model.predict(state_onehot)
+        target = self.model.predict(state_onehot, verbose=0)
         
         if done:
             target[0][action] = reward
         else:
             # 다음 상태에서의 최대 Q값 탐색 (Off-policy)
-            next_q_values = self.model.predict(next_state_onehot)
+            next_q_values = self.model.predict(next_state_onehot, verbose=0)
             target[0][action] = reward + self.gamma * np.max(next_q_values[0])
             
         # 모델 업데이트 (즉시 학습)
