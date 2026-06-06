@@ -9,30 +9,38 @@ class MCAgent:
     몬테카를로(Monte Carlo) 에이전트
     에피소드가 종료된 후 수집된 경험(G_t)을 바탕으로 신경망을 학습합니다.
     """
-    def __init__(self, state_size=48, action_size=4, learning_rate=0.001, gamma=0.99):
+    def __init__(self, state_size=48, action_size=4, learning_rate=0.001, gamma=0.99, hidden_layers=[64, 64]):
         self.state_size = state_size # 4x12 = 48 states
-        self.action_size = action_size # 상, 하, 좌, 우
+        self.action_size = action_size # 위, 오른쪽, 아래, 왼쪽 (2장코드 기준)
         self.gamma = gamma
         self.learning_rate = learning_rate
         self.epsilon = 1.0
         self.epsilon_decay = 0.995
         self.epsilon_min = 0.01
+        self.hidden_layers = hidden_layers
         
         # environment.py의 move() 메서드와 호환을 위한 속성
         self.pos = [3, 0]
-        self.action = np.array([[-1,0],[0,1],[1,0],[0,-1]]) # 위, 오른쪽, 아래, 왼쪽 (2장코드 기준)
+        self.action = np.array([[-1,0],[0,1],[1,0],[0,-1]])
         
-        # 신경망 모델 생성 (RL_Comparison_Strategy.md 권장 구조)
+        # 신경망 모델 생성
         self.model = self._build_model()
         
         # 에피소드 저장을 위한 메모리
         self.memory = []
 
     def _build_model(self):
-        """동일한 구조의 DNN 설계 (Dense 레이어 2~3개)"""
+        """
+        예제코드(2장)의 Tabular 몬테카를로 방식을 확장하여, 예제코드(4장)의 DQN 플레이어처럼 
+        심층신경망(DNN)을 함수 근사기(Function Approximator)로 사용하는 Deep Monte Carlo 알고리즘을 구현했습니다.
+        hidden_layers 파라미터를 통해 동적으로 모델 구조를 변경할 수 있게 설계했습니다.
+        """
         model = Sequential()
-        model.add(Dense(64, input_dim=self.state_size, activation='relu'))
-        model.add(Dense(64, activation='relu'))
+        for i, units in enumerate(self.hidden_layers):
+            if i == 0:
+                model.add(Dense(units, input_dim=self.state_size, activation='relu'))
+            else:
+                model.add(Dense(units, activation='relu'))
         model.add(Dense(self.action_size, activation='linear'))
         model.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
         return model
