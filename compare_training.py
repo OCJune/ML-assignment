@@ -82,8 +82,11 @@ if __name__ == "__main__":
     EPISODES = 300
     # 여러 구조 테스트
     architectures = {
-        "Shallow (32 nodes)": [32],
-        "Deep (64-64 nodes)": [64, 64]
+        "Shallow-Tiny [32]": [32],
+        "Shallow-Mid [32, 32]": [32, 32],
+        "Standard [64, 64]": [64, 64],
+        "Deep-Slim [32, 32, 32]": [32, 32, 32],
+        "Deep-Large [64, 64, 64]": [64, 64, 64]
     }
     
     results_summary = []
