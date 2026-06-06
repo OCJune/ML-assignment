@@ -1,64 +1,59 @@
-# 몬테카를로 vs Q-러닝 성능 비교 분석 프로젝트
+# 몬테카를로 vs Q-Learning 성능 비교 분석 프로젝트
 
-이 프로젝트는 `environment.py`에 정의된 **Cliff Walking(절벽 걷기)** 미로 환경에서 강화학습의 두 가지 대표적인 알고리즘인 **몬테카를로(Monte Carlo)**와 **Q-러닝(Q-Learning)**의 학습 성능을 비교 분석합니다.
+이 프로젝트는 `environment.py`에 정의된 **Cliff Walking(절벽 걷기)** 환경에서 강화학습의 두 가지 알고리즘인 **Monte Carlo control**과 **Q-learning**을 구현하고 학습 과정을 비교합니다.
 
 ## 1. 분석 전략
 
-본 프로젝트는 두 알고리즘의 공정한 성능 비교와 교수님의 공지사항인 '합당한 분석'을 위해 다음과 같은 전략을 따릅니다.
+### 1.1 교재 코드 기반 구현
 
-### 1.1 복수 모델 아키텍처 기반 비교 (Depth vs Width)
+- **2장 코드 기반**: GridWorld 환경, Agent 위치/행동 구조, Monte Carlo return 계산, Q-learning TD 갱신식을 사용했습니다.
+- **4장 코드 기반 비교 요소**: player/agent 클래스 구조, `epsilon-greedy` 정책, 학습 루프에서 reward/step/fall/success를 기록하고 두 알고리즘을 비교하는 방식을 반영했습니다.
+- 신경망/Keras는 사용하지 않고, 상태 수가 작은 Cliff Walking 문제에 적합한 **Q-table 기반 구현**을 사용합니다.
 
-단일 모델 구조에 따른 성능 격차를 알고리즘의 차이로 오해하는 것을 방지하기 위해, 신경망의 깊이(Depth)와 너비(Width)를 다양화한 5가지 구조에서 두 알고리즘을 각각 테스트합니다.
+### 1.2 알고리즘
 
-- **Shallow-Tiny [32]**: 가장 기본적인 1층 신경망
-- **Shallow-Mid [32, 32]**: 얕고 표준적인 2층 신경망
-- **Standard [64, 64]**: 너비를 확장한 2층 신경망
-- **Deep-Slim [32, 32, 32]**: 깊이를 강조한 3층 신경망
-- **Deep-Large [64, 64, 64]**: 가장 복잡한 3층 신경망
+- **Monte Carlo control**: 에피소드가 끝난 뒤 저장된 `(state, action, reward)` 기록을 역순으로 보며 return `G`를 계산하고, 방문 횟수 기반 평균으로 `Q(s,a)`를 갱신합니다. 2장 Monte Carlo 방식처럼 exploring starts를 사용해 다양한 상태-행동 쌍을 방문합니다.
+- **Q-learning**: 매 step마다 `reward + gamma * max Q(next_state, action)` TD target을 사용해 `Q(s,a)`를 즉시 갱신합니다.
 
-### 1.2 알고리즘별 학습 특성 및 함수 근사기 적용
+Cliff Walking 환경은 절벽 보상 `-100`, 도착 보상 `+100`, 일반 이동 보상 `-1`로 설정했습니다. 절벽에 빠지면 시작점으로 돌아가고, 목표에 도달했을 때만 에피소드가 종료됩니다.
 
-- **Deep Monte Carlo (MC)**: 예제코드 2장의 Tabular 방식을 확장하여 4장의 DQN 구조를 함수 근사기(DNN)로 도입했습니다. 에피소드 종료 후 전체 보상 합($G_t$)을 타겟으로 학습하며, 레이어가 깊어질수록 높은 분산(Variance)으로 인한 학습 불안정성을 분석합니다.
-- **Deep Q-Learning (QL)**: 매 스텝마다 TD 타겟으로 학습(Bootstrapping)합니다. 실시간 오차 수정 덕분에 모델의 복잡도와 관계없이 상대적으로 일관되고 빠른 수렴 속도를 보이는지 확인합니다.
+### 1.3 평가 지표
 
-### 1.3 성능 평가 지표
-
-- **Average Reward (Last 50 Episodes)**: 학습 후반부의 안정적인 수렴 성능 비교.
-- **Average Steps to Goal (Last 50 Episodes)**: 최단 경로 도달 효율성 비교.
-- **Total Cliff Falls**: 학습 전체 과정에서의 위험 회피 능력 및 안정성 지표.
-
----
+- **Train Reward / Train Steps**: 마지막 50개 학습 에피소드의 평균 보상과 평균 step 수.
+- **Train Falls**: 학습 중 절벽에 빠진 총 횟수.
+- **Train Success**: 학습 중 목표 지점에 도달한 비율.
+- **Eval Reward / Eval Steps / Eval Success**: 학습 후 `epsilon=0` greedy 정책으로 별도 평가한 결과.
 
 ## 2. 설치 및 실행 방법
 
 ### 2.1 환경 구축
 
-프로젝트 실행에 필요한 라이브러리를 설치합니다. (Python 3.x 환경 권장)
-
 ```bash
 pip install -r environment.txt
 ```
 
-### 2.2 통합 비교 및 자동화 실험 실행 (권장)
-
-정의된 모든 아키텍처에 대해 두 알고리즘을 순차적으로 학습시키고, 종합 비교 그래프와 성능 요약 표를 생성합니다.
-
-**방법 A: 파이썬 스크립트 실행**
+### 2.2 파이썬 스크립트 실행
 
 ```bash
 python compare_training.py
 ```
 
-- **특징:** 실행 완료 후 콘솔(터미널)에 성능 요약 표가 출력되며, 그래프는 `learning_comparison_multi_arch.png` 파일로 저장됩니다.
+실행 후 콘솔에 성능 요약 표가 출력되고, 그래프는 아래 경로에 저장됩니다.
 
-**방법 B: 주피터 노트북 실행**
+```text
+팀플/learning_comparison_mc_vs_ql.png
+팀플/monte_carlo_greedy_path.png
+팀플/q_learning_greedy_path.png
+```
+
+### 2.3 주피터 노트북 실행
 
 - 파일: `RL_Comparison.ipynb`
-- **특징:** `matplotlib`을 통해 **인라인 그래프**를 즉시 확인할 수 있으며, 성능 결과가 **Markdown 표** 형식으로 셀 아래에 직접 출력되어 보고서 작성 및 시각적 분석에 용이합니다.
-
----
+- 노트북은 `environment.py`, `MonteCarlo/mc_agent.py`, `QLearning/q_agent.py`, `compare_training.py`를 import해서 동일한 실험을 실행합니다.
 
 ## 3. 결과물
 
-- **`learning_comparison_multi_arch.png`**: 모든 모델 구조에 대한 알고리즘별 보상 및 스텝 수 비교 그래프입니다. 층이 깊어짐에 따른 알고리즘의 민감도를 시각적으로 분석할 수 있습니다.
-- **콘솔 출력 (Performance Table)**: 실험 종료 후 터미널에 Markdown 형식의 성능 요약 표가 출력됩니다. 각 구조별 평균 보상, 스텝, 추락 횟수를 수치적으로 비교하여 보고서 작성에 활용할 수 있습니다.
+- **`팀플/learning_comparison_mc_vs_ql.png`**: Monte Carlo와 Q-learning의 학습 보상, step 수, 누적 성공률, 누적 절벽 추락 횟수 비교 그래프.
+- **`팀플/monte_carlo_greedy_path.png`**: Monte Carlo 학습 후 greedy 정책의 실제 이동 경로.
+- **`팀플/q_learning_greedy_path.png`**: Q-learning 학습 후 greedy 정책의 실제 이동 경로.
+- **콘솔/노트북 출력 표**: 두 알고리즘의 학습 후반부 성능과 greedy 평가 성능 비교 표.

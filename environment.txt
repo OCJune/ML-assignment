@@ -2,7 +2,5 @@
 # 설치 방법: pip install -r environment.txt
 
 numpy
-tensorflow
-keras
 matplotlib
 tqdm

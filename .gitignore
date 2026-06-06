@@ -7,3 +7,8 @@ __pycache__/
 *.py[cod]
 
 .ipynb_checkpoints/
+
+팀플/learning_comparison_multi_arch.png
+팀플/learning_comparison_mc_vs_ql.png
+팀플/monte_carlo_greedy_path.png
+팀플/q_learning_greedy_path.png
