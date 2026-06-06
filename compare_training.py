@@ -79,6 +79,12 @@ def run_qlearning(episodes=300, hidden_layers=[64, 64]):
     return rewards, steps_to_goal, cliff_falls
 
 if __name__ == "__main__":
+    """
+    1. 자동화된 실험: 단일 에이전트 학습에 집중하는 예제코드와 달리, 5가지 각기 다른 신경망 구조에서 
+       두 알고리즘을 동시에 테스트하는 자동화 루프를 구현했습니다.
+    2. 통계적 비교: 학습 후반부(마지막 50 에피소드)의 평균 보상과 스텝 수를 계산하여 객관적인 성능 지표를 제시합니다.
+    3. 시각화 강화: Matplotlib을 사용하여 알고리즘별 수렴 과정을 그래프로 한눈에 비교 분석할 수 있게 했습니다.
+    """
     EPISODES = 300
     # 여러 구조 테스트
     architectures = {

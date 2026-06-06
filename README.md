@@ -36,7 +36,7 @@
 프로젝트 실행에 필요한 라이브러리를 설치합니다. (Python 3.x 환경 권장)
 
 ```bash
-pip install -r 팀플/environment.txt
+pip install -r environment.txt
 ```
 
 ### 2.2 통합 비교 및 자동화 실험 실행 (권장)
@@ -46,19 +46,19 @@ pip install -r 팀플/environment.txt
 **방법 A: 파이썬 스크립트 실행**
 
 ```bash
-python 팀플/compare_training.py
+python compare_training.py
 ```
 
-- **특징:** 실행 완료 후 콘솔(터미널)에 성능 요약 표가 출력되며, 그래프는 `팀플/learning_comparison_multi_arch.png` 파일로 저장됩니다.
+- **특징:** 실행 완료 후 콘솔(터미널)에 성능 요약 표가 출력되며, 그래프는 `learning_comparison_multi_arch.png` 파일로 저장됩니다.
 
 **방법 B: 주피터 노트북 실행**
 
-- 파일: `팀플/RL_Comparison_MC_vs_QL.ipynb`
+- 파일: `RL_Comparison.ipynb`
 - **특징:** `matplotlib`을 통해 **인라인 그래프**를 즉시 확인할 수 있으며, 성능 결과가 **Markdown 표** 형식으로 셀 아래에 직접 출력되어 보고서 작성 및 시각적 분석에 용이합니다.
 
 ---
 
 ## 3. 결과물
 
-- **`팀플/learning_comparison_multi_arch.png`**: 모든 모델 구조에 대한 알고리즘별 보상 및 스텝 수 비교 그래프입니다. 층이 깊어짐에 따른 알고리즘의 민감도를 시각적으로 분석할 수 있습니다.
+- **`learning_comparison_multi_arch.png`**: 모든 모델 구조에 대한 알고리즘별 보상 및 스텝 수 비교 그래프입니다. 층이 깊어짐에 따른 알고리즘의 민감도를 시각적으로 분석할 수 있습니다.
 - **콘솔 출력 (Performance Table)**: 실험 종료 후 터미널에 Markdown 형식의 성능 요약 표가 출력됩니다. 각 구조별 평균 보상, 스텝, 추락 횟수를 수치적으로 비교하여 보고서 작성에 활용할 수 있습니다.
