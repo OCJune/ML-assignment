@@ -20,6 +20,7 @@ class QLearningAgent:
         epsilon_min=0.01,
         **_,
     ):
+        # 외부에서 하이퍼파라미터를 넘겨받을 수 있도록 매개변수화
         self.state_shape = state_shape
         self.action_size = action_size
         self.learning_rate = learning_rate
@@ -32,6 +33,7 @@ class QLearningAgent:
         self.pos = np.array([3, 0])
         self.action = np.array([[-1, 0], [0, 1], [1, 0], [0, -1]])
 
+        # Cliff Walking 격자 크기에 맞춰 고정 크기의 3차원 NumPy 배열 정의
         self.q_table = np.zeros((*self.state_shape, self.action_size))
 
     def set_pos(self, position):
@@ -43,6 +45,8 @@ class QLearningAgent:
 
     def select_action(self, state=None):
         """2장/4장 코드의 epsilon-greedy 방식으로 행동 선택"""
+        # 외부에서 state(좌표)를 직접 주입받아 행동 선택 가능
+        # np.flatnonzero를 사용하여 최대 Q값을 가진 모든 행동들 중 균등한 확률로 무작위 선택
         pos = self.pos if state is None else np.array(state)
 
         if np.random.rand() <= self.epsilon:
@@ -67,5 +71,6 @@ class QLearningAgent:
         self.q_table[row, col, action] += self.learning_rate * (target - now_q)
 
     def decay_epsilon(self):
+        # 매 에피소드 종료 시점마다 지수 형태로 감쇄하여 epsilon_min 하한선까지 decay
         if self.epsilon > self.epsilon_min:
             self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
