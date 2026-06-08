@@ -26,13 +26,16 @@ def get_exploring_start_states(env):
 
 
 def run_episode(env, agent, algo, train=True, max_steps=MAX_STEPS, start_state=None, first_action=None):
+    """하나의 에피소드를 실행하고 보상, 스텝 수, 절벽 추락 횟수, 성공 여부를 반환"""
     state = np.array(env.start_position if start_state is None else start_state)
     agent.set_pos(state)
 
+    # 에피소드별 성능 지표
     total_reward = 0
     steps = 0
     falls = 0
     done = False
+    success = False
 
     while not done and steps < max_steps:
         if steps == 0 and first_action is not None:
@@ -42,6 +45,8 @@ def run_episode(env, agent, algo, train=True, max_steps=MAX_STEPS, start_state=N
 
         next_state, reward, done = env.move(agent, action)
         next_state = np.array(next_state)
+        if done and reward == env.goal:
+            success = True
 
         if train:
             if algo == "MC":
@@ -54,14 +59,16 @@ def run_episode(env, agent, algo, train=True, max_steps=MAX_STEPS, start_state=N
         steps += 1
         falls += int(reward == env.cliff)
 
-    return total_reward, steps, falls, done
+    return total_reward, steps, falls, success
 
 
 def evaluate_agent(agent, algo, episodes=EVAL_EPISODES):
+    """학습이 끝난 에이전트를 greedy 정책으로 평가"""
     env = Environment()
     old_epsilon = agent.epsilon
     agent.epsilon = 0.0
 
+    # 평가 episode들의 결과를 저장
     rewards = []
     success_steps = []
     falls = 0
@@ -99,11 +106,14 @@ def get_greedy_path(agent, max_steps=MAX_STEPS):
     rewards = []
     actions = []
     done = False
+    success = False
 
     for _ in range(max_steps):
         action = agent.select_action(state)
         next_state, reward, done = env.move(agent, action)
         next_state = np.array(next_state)
+        if done and reward == env.goal:
+            success = True
 
         actions.append(action)
         rewards.append(reward)
@@ -114,15 +124,45 @@ def get_greedy_path(agent, max_steps=MAX_STEPS):
             break
 
     agent.epsilon = old_epsilon
-    return path, actions, rewards, done
+    return path, actions, rewards, success
+
+
+def average_range(values, start, end=None):
+    """episode 구간의 평균값을 계산"""
+    selected = values[start:end]
+    if len(selected) == 0:
+        return np.nan
+    return np.mean(selected)
+
+
+def format_float(value, width=10):
+    """표 출력용 숫자 포맷"""
+    if np.isnan(value):
+        return f"{'N/A':<{width}}"
+    return f"{value:<{width}.2f}"
+
+
+def summarize_greedy_path(agent):
+    """최종 greedy 경로의 보상, 스텝 수, 절벽 추락 횟수, 성공 여부를 정리"""
+    env = Environment()
+    path, actions, rewards, success = get_greedy_path(agent)
+
+    return {
+        "GreedyReward": int(np.sum(rewards)),
+        "GreedySteps": len(actions),
+        "GreedyFalls": int(np.sum(np.array(rewards) == env.cliff)),
+        "GreedySuccess": success,
+    }
 
 
 def train_agent(algo, episodes=EPISODES, seed=0):
+    """지정된 알고리즘을 학습하고 episode별 지표를 저장"""
     np.random.seed(seed)
     env = Environment()
-    agent = MCAgent(env) if algo == "MC" else QLearningAgent()
+    agent = MCAgent(env) if algo == "MC" else QLearningAgent(env)
     exploring_states = get_exploring_start_states(env)
 
+    # 학습 과정 분석을 위한 episode별 기록
     rewards = []
     steps = []
     falls = []
@@ -166,40 +206,110 @@ def train_agent(algo, episodes=EPISODES, seed=0):
 
 
 def summarize_result(algo, result, last_n=50):
+    """학습 결과와 평가 결과를 표 출력용 dict로 정리"""
+    rewards = result["rewards"]
+
     return {
         "Algo": algo,
-        "TrainRewardLastN": np.mean(result["rewards"][-last_n:]),
+        "TrainRewardMean": np.mean(rewards),
+        "TrainRewardLastN": np.mean(rewards[-last_n:]),
+        "TrainRewardBest": np.max(rewards),
+        "TrainRewardWorst": np.min(rewards),
+        "RewardEp1_5000": average_range(rewards, 0, 5000),
+        "RewardEp5001_10000": average_range(rewards, 5000, 10000),
+        "RewardEp10001_15000": average_range(rewards, 10000, 15000),
+        "RewardEp15001_20000": average_range(rewards, 15000, 20000),
         "TrainStepsLastN": np.mean(result["steps"][-last_n:]),
         "TrainFalls": int(np.sum(result["falls"])),
         "TrainSuccessRate": np.mean(result["successes"]),
         **result["eval"],
+        **summarize_greedy_path(result["agent"]),
     }
 
 
-def print_summary(rows):
-    print("\n" + "=" * 118)
-    print(" " * 42 + "MC vs Q-Learning Comparison")
-    print("=" * 118)
-    print(
-        f"{'Algo':<12} | {'Train Reward':<13} | {'Train Steps':<12} | {'Train Falls':<11} | "
-        f"{'Train Success':<13} | {'Eval Reward':<11} | {'Eval Steps':<10} | {'Eval Success':<12}"
-    )
-    print("-" * 118)
+def save_metric_output(filename, text):
+    """수치 지표 표를 txt 파일로 저장"""
+    os.makedirs("팀플", exist_ok=True)
+    path = os.path.join("팀플", filename)
+    with open(path, "w", encoding="utf-8") as file:
+        file.write(text)
+    print(f"\nSaved metric table: {path}")
+
+
+def print_and_save_metric(title, filename, lines):
+    """하나의 지표 표를 콘솔에 출력하고 별도 파일로 저장"""
+    text = "\n".join(lines)
+    print("\n" + "=" * 92)
+    print(title)
+    print("=" * 92)
+    print(text)
+    save_metric_output(filename, text + "\n")
+
+
+def print_training_reward_metrics(rows):
+    """Training Reward 지표를 따로 출력"""
+    lines = [
+        f"{'Algo':<12} | {'Avg Reward':<11} | {'Last50 Reward':<13} | "
+        f"{'Best Reward':<11} | {'Worst Reward':<12}",
+        "-" * 70,
+    ]
 
     for row in rows:
-        eval_steps = "N/A" if np.isnan(row["EvalSteps"]) else f"{row['EvalSteps']:.2f}"
-        print(
-            f"{row['Algo']:<12} | {row['TrainRewardLastN']:<13.2f} | {row['TrainStepsLastN']:<12.2f} | "
-            f"{row['TrainFalls']:<11} | {row['TrainSuccessRate'] * 100:<12.1f}% | "
-            f"{row['EvalReward']:<11.2f} | {eval_steps:<10} | {row['EvalSuccessRate'] * 100:<11.1f}%"
+        lines.append(
+            f"{row['Algo']:<12} | {row['TrainRewardMean']:<11.2f} | "
+            f"{row['TrainRewardLastN']:<13.2f} | {row['TrainRewardBest']:<11.2f} | "
+            f"{row['TrainRewardWorst']:<12.2f}"
         )
 
-    print("=" * 118)
-    print("* Train Reward/Steps are averages from the last 50 training episodes.")
-    print("* Eval metrics are measured after training with epsilon=0 greedy policy.")
+    lines.append("* Last50 Reward is the average reward from the final 50 training episodes.")
+    print_and_save_metric("[1. Training Reward]", "training_reward_metrics.txt", lines)
+
+
+def print_reward_by_phase_metrics(rows):
+    """Reward by Phase 지표를 따로 출력"""
+    lines = [
+        f"{'Algo':<12} | {'Ep 1-5000':<11} | {'Ep 5001-10000':<14} | "
+        f"{'Ep 10001-15000':<15} | {'Ep 15001-20000':<15} | {'Last 50':<8}",
+        "-" * 86,
+    ]
+
+    for row in rows:
+        lines.append(
+            f"{row['Algo']:<12} | {format_float(row['RewardEp1_5000'], 11)} | "
+            f"{format_float(row['RewardEp5001_10000'], 14)} | {format_float(row['RewardEp10001_15000'], 15)} | "
+            f"{format_float(row['RewardEp15001_20000'], 15)} | {format_float(row['TrainRewardLastN'], 8)}"
+        )
+
+    print_and_save_metric("[2. Reward by Phase]", "reward_by_phase_metrics.txt", lines)
+
+
+def print_final_greedy_path_metrics(rows):
+    """Final Greedy Path 지표를 따로 출력"""
+    lines = [
+        f"{'Algo':<12} | {'Path Reward':<11} | {'Path Steps':<10} | "
+        f"{'Path Falls':<10} | {'Path Success':<12}",
+        "-" * 68,
+    ]
+
+    for row in rows:
+        lines.append(
+            f"{row['Algo']:<12} | {row['GreedyReward']:<11} | {row['GreedySteps']:<10} | "
+            f"{row['GreedyFalls']:<10} | {str(row['GreedySuccess']):<12}"
+        )
+
+    lines.append("* Final Greedy Path is measured with epsilon=0 from the fixed start position.")
+    print_and_save_metric("[3. Final Greedy Path]", "final_greedy_path_metrics.txt", lines)
+
+
+def print_summary(rows):
+    """두 알고리즘의 주요 수치 지표를 각각 따로 출력"""
+    print_training_reward_metrics(rows)
+    print_reward_by_phase_metrics(rows)
+    print_final_greedy_path_metrics(rows)
 
 
 def plot_training(mc_result, ql_result):
+    """학습 중 기록된 reward, steps, success, falls를 그래프로 저장"""
     os.makedirs("팀플", exist_ok=True)
 
     plt.figure(figsize=(14, 8))
@@ -299,6 +409,7 @@ def plot_policy_path(agent, title, filename):
 
 
 def plot_all_policy_paths(mc_result, ql_result):
+    """MC와 Q-learning의 최종 greedy 경로 그림을 모두 저장"""
     mc_path = plot_policy_path(
         mc_result["agent"],
         "Monte Carlo",

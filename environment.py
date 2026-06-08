@@ -15,12 +15,14 @@ class Environment():
     start_position = [3,0]
     
     # 3. 보상 리스트 숫자
+    # 실제 학습에서 reward 값으로 사용
     reward_list = [[road,road,road,road,road,road,road,road,road,road,road,road],
                    [road,road,road,road,road,road,road,road,road,road,road,road],
                    [road,road,road,road,road,road,road,road,road,road,road,road],
                    [road,cliff,cliff,cliff,cliff,cliff,cliff,cliff,cliff,cliff,cliff,goal]]
     
     # 4. 보상 리스트 문자
+    # 상태 종류(길, 절벽, 목표)를 판별할 때 사용
     reward_list1 = [["road","road","road","road","road","road","road","road","road","road","road","road"],
                     ["road","road","road","road","road","road","road","road","road","road","road","road"],
                     ["road","road","road","road","road","road","road","road","road","road","road","road"],
@@ -31,6 +33,7 @@ class Environment():
         self.reward = np.asarray(self.reward_list)    
 
     # 6. 선택된 에이전트의 행동 결과 반환
+    # 반환값: 다음 위치, 보상, 에피소드 종료 여부
     def move(self, agent, action):
         
         done = False
@@ -38,17 +41,18 @@ class Environment():
         # 6.1 행동에 따른 좌표 구하기
         new_pos = agent.pos + agent.action[action]
 
-        # 6.2 이동 후 좌표가 미로 밖이면 제자리에 머무름
+        # 6.2 이동 후 좌표가 미로 밖이면 패널티를 받고 에피소드 종료
         if (new_pos[0] < 0 or new_pos[0] >= self.reward.shape[0] or 
             new_pos[1] < 0 or new_pos[1] >= self.reward.shape[1]):
             observation = agent.set_pos(agent.pos)
-            reward = self.road
+            reward = self.cliff
+            done = True
 
-        # 6.3 절벽이면 큰 패널티를 받고 시작점으로 돌아가되 에피소드는 계속 진행
+        # 6.3 절벽이면 큰 패널티를 받고 에피소드 종료
         elif self.reward_list1[new_pos[0]][new_pos[1]] == "cliff":
             reward = self.cliff
-            observation = agent.set_pos(self.start_position)
-            done = False
+            observation = agent.set_pos(new_pos)
+            done = True
 
         # 6.4 목적지에 도착하면 에피소드 종료
         elif self.reward_list1[new_pos[0]][new_pos[1]] == "goal":

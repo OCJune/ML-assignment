@@ -1,0 +1,5 @@
+Algo         | Path Reward | Path Steps | Path Falls | Path Success
+--------------------------------------------------------------------
+Monte Carlo  | 86          | 15         | 0          | True        
+Q-Learning   | 88          | 13         | 0          | True        
+* Final Greedy Path is measured with epsilon=0 from the fixed start position.

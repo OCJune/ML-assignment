@@ -1,16 +1,30 @@
 import numpy as np
 
 
+def e_greedy(q_table, agent, epsilon):
+    # epsilon-greedy 방식으로 행동 선택
+    pos = agent.get_pos()
+
+    if np.random.rand() <= epsilon:
+        return np.random.randint(len(agent.action))
+
+    q_values = q_table[pos[0], pos[1], :]
+    max_actions = np.flatnonzero(q_values == np.max(q_values))
+    return np.random.choice(max_actions)
+
+
 class MCAgent:
+    action = np.array([[-1, 0], [0, 1], [1, 0], [0, -1]])
+
     """
     몬테카를로 에이전트.
     에피소드를 끝까지 가보고 각 (state, action)에 대해 return G를 incremental average로 계산한다. 
-    이후 평균낸 G를 바탕으로 Q테이블을 업데이트한다. 
+    이후 평균낸 G를 바탕으로 가치함수 테이블을 업데이트한다. 
     """
+    # 모델 학습 변수 초기화. 
     def __init__(
         self,
-        state_shape=(4, 12),
-        action_size=4,
+        env,
         gamma=0.99,
         epsilon=1.0,
         epsilon_decay=0.9995,
@@ -18,8 +32,6 @@ class MCAgent:
         first_visit=True,
         **_,
     ):
-        self.state_shape = state_shape
-        self.action_size = action_size
         self.gamma = gamma
         self.epsilon = epsilon
         self.epsilon_decay = epsilon_decay
@@ -27,11 +39,12 @@ class MCAgent:
         self.first_visit = first_visit
 
         # environment.py의 move() 메서드와 호환되는 2장 Agent 구조
-        self.pos = np.array([3, 0])
-        self.action = np.array([[-1, 0], [0, 1], [1, 0], [0, -1]])
+        self.pos = np.array(env.start_position)
+        self.action_size = len(self.action)
+        self.state_shape = env.reward.shape
 
-        self.q_table = np.zeros((*self.state_shape, self.action_size))
-        self.q_visit = np.zeros((*self.state_shape, self.action_size))
+        self.q_table = np.zeros((env.reward.shape[0], env.reward.shape[1], len(self.action)))
+        self.q_visit = np.zeros((env.reward.shape[0], env.reward.shape[1], len(self.action)))
         self.memory = []
 
     def set_pos(self, position):
@@ -43,14 +56,9 @@ class MCAgent:
 
     def select_action(self, state=None):
         """2장/4장 코드의 epsilon-greedy 방식으로 행동 선택"""
-        pos = self.pos if state is None else np.array(state)
-
-        if np.random.rand() <= self.epsilon:
-            return np.random.randint(self.action_size)
-
-        q_values = self.q_table[pos[0], pos[1], :]
-        max_actions = np.flatnonzero(q_values == np.max(q_values))
-        return np.random.choice(max_actions)
+        if state is not None:
+            self.set_pos(state)
+        return e_greedy(self.q_table, self, self.epsilon)
 
     def append_sample(self, state, action, reward):
         self.memory.append((np.array(state), action, reward))

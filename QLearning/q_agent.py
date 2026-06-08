@@ -1,7 +1,21 @@
 import numpy as np
 
 
+def e_greedy(q_table, agent, epsilon):
+    """2장 코드의 epsilon-greedy 방식으로 행동 선택"""
+    pos = agent.get_pos()
+
+    if np.random.rand() <= epsilon:
+        return np.random.randint(len(agent.action))
+
+    q_values = q_table[pos[0], pos[1], :]
+    max_actions = np.flatnonzero(q_values == np.max(q_values))
+    return np.random.choice(max_actions)
+
+
 class QLearningAgent:
+    action = np.array([[-1, 0], [0, 1], [1, 0], [0, -1]])
+
     """
     Q-learning 에이전트.
 
@@ -11,8 +25,7 @@ class QLearningAgent:
     """
     def __init__(
         self,
-        state_shape=(4, 12),
-        action_size=4,
+        env,
         learning_rate=0.1,
         gamma=0.99,
         epsilon=1.0,
@@ -21,8 +34,6 @@ class QLearningAgent:
         **_,
     ):
         # 외부에서 하이퍼파라미터를 넘겨받을 수 있도록 매개변수화
-        self.state_shape = state_shape
-        self.action_size = action_size
         self.learning_rate = learning_rate
         self.gamma = gamma
         self.epsilon = epsilon
@@ -30,11 +41,12 @@ class QLearningAgent:
         self.epsilon_min = epsilon_min
 
         # environment.py의 move() 메서드와 호환되는 2장 Agent 구조
-        self.pos = np.array([3, 0])
-        self.action = np.array([[-1, 0], [0, 1], [1, 0], [0, -1]])
+        self.pos = np.array(env.start_position)
+        self.action_size = len(self.action)
+        self.state_shape = env.reward.shape
 
         # Cliff Walking 격자 크기에 맞춰 고정 크기의 3차원 NumPy 배열 정의
-        self.q_table = np.zeros((*self.state_shape, self.action_size))
+        self.q_table = np.zeros((env.reward.shape[0], env.reward.shape[1], len(self.action)))
 
     def set_pos(self, position):
         self.pos = np.array(position)
@@ -47,14 +59,9 @@ class QLearningAgent:
         """2장/4장 코드의 epsilon-greedy 방식으로 행동 선택"""
         # 외부에서 state(좌표)를 직접 주입받아 행동 선택 가능
         # np.flatnonzero를 사용하여 최대 Q값을 가진 모든 행동들 중 균등한 확률로 무작위 선택
-        pos = self.pos if state is None else np.array(state)
-
-        if np.random.rand() <= self.epsilon:
-            return np.random.randint(self.action_size)
-
-        q_values = self.q_table[pos[0], pos[1], :]
-        max_actions = np.flatnonzero(q_values == np.max(q_values))
-        return np.random.choice(max_actions)
+        if state is not None:
+            self.set_pos(state)
+        return e_greedy(self.q_table, self, self.epsilon)
 
     def train_model(self, state, action, reward, next_state, done):
         """
