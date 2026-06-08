@@ -3,11 +3,9 @@ import numpy as np
 
 class MCAgent:
     """
-    몬테카를로(Monte Carlo) 에이전트.
-
-    2장 코드의 Monte Carlo control 방식을 Cliff Walking 환경에 맞게 옮긴 구현입니다.
-    에피소드를 끝까지 저장한 뒤, 각 (state, action)에 대해 return G를 계산하고
-    방문 횟수 기반 평균으로 Q-table을 갱신합니다.
+    몬테카를로 에이전트.
+    에피소드를 끝까지 가보고 각 (state, action)에 대해 return G를 incremental average로 계산한다. 
+    이후 평균낸 G를 바탕으로 Q테이블을 업데이트한다. 
     """
     def __init__(
         self,

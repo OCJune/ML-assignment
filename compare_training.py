@@ -8,8 +8,9 @@ from environment import Environment
 from MonteCarlo.mc_agent import MCAgent
 from QLearning.q_agent import QLearningAgent
 
-
+# MAX STEP을 제한하여 학습의 길이를 줄인다. 
 MAX_STEPS = 200
+# 에피소드 20000개
 EPISODES = 20000
 EVAL_EPISODES = 50
 
@@ -119,7 +120,7 @@ def get_greedy_path(agent, max_steps=MAX_STEPS):
 def train_agent(algo, episodes=EPISODES, seed=0):
     np.random.seed(seed)
     env = Environment()
-    agent = MCAgent() if algo == "MC" else QLearningAgent()
+    agent = MCAgent(env) if algo == "MC" else QLearningAgent()
     exploring_states = get_exploring_start_states(env)
 
     rewards = []
