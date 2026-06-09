@@ -167,8 +167,13 @@ def train_agent(algo, episodes=EPISODES, seed=0):
     steps = []
     falls = []
     successes = []
+    max_episode = episodes
 
-    for _ in tqdm(range(episodes), desc=algo):
+    for epi in tqdm(range(max_episode), desc=algo):
+        # 교재 2장의 epsilon 감소 방식: epsilon = 1 - epi / max_episode
+        epsilon = 1 - epi / max_episode
+        agent.epsilon = epsilon
+
         if algo == "MC":
             start_state = exploring_states[np.random.randint(len(exploring_states))]
             first_action = np.random.randint(agent.action_size)
@@ -186,9 +191,8 @@ def train_agent(algo, episodes=EPISODES, seed=0):
         )
 
         if algo == "MC":
+            # MC는 episode 종료 후 Q-table 업데이트를 수행한다.
             agent.train_model()
-        else:
-            agent.decay_epsilon()
 
         rewards.append(reward)
         steps.append(episode_steps)

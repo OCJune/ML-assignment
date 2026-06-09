@@ -27,15 +27,12 @@ class MCAgent:
         env,
         gamma=0.99,
         epsilon=1.0,
-        epsilon_decay=0.9995,
-        epsilon_min=0.05,
         first_visit=True,
         **_,
     ):
         self.gamma = gamma
+        # epsilon 값은 compare_training.py에서 교재 2장 방식(epsilon = 1 - epi/max_episode)으로 갱신한다.
         self.epsilon = epsilon
-        self.epsilon_decay = epsilon_decay
-        self.epsilon_min = epsilon_min
         self.first_visit = first_visit
 
         # environment.py의 move() 메서드와 호환되는 2장 Agent 구조
@@ -86,8 +83,3 @@ class MCAgent:
             )
 
         self.memory = []
-        self.decay_epsilon()
-
-    def decay_epsilon(self):
-        if self.epsilon > self.epsilon_min:
-            self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)

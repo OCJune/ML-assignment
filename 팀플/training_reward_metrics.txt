@@ -1,5 +1,5 @@
 Algo         | Avg Reward  | Last50 Reward | Best Reward | Worst Reward
 ----------------------------------------------------------------------
-Monte Carlo  | 25.96       | 45.98         | 100.00      | -290.00     
-Q-Learning   | 76.75       | 72.36         | 88.00       | -181.00     
+Monte Carlo  | -39.10      | 56.36         | 100.00      | -163.00     
+Q-Learning   | -65.27      | 84.20         | 88.00       | -156.00     
 * Last50 Reward is the average reward from the final 50 training episodes.

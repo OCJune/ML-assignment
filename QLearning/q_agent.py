@@ -29,16 +29,13 @@ class QLearningAgent:
         learning_rate=0.1,
         gamma=0.99,
         epsilon=1.0,
-        epsilon_decay=0.995,
-        epsilon_min=0.01,
         **_,
     ):
         # 외부에서 하이퍼파라미터를 넘겨받을 수 있도록 매개변수화
         self.learning_rate = learning_rate
         self.gamma = gamma
+        # epsilon 값은 compare_training.py에서 교재 2장 방식(epsilon = 1 - epi/max_episode)으로 갱신한다.
         self.epsilon = epsilon
-        self.epsilon_decay = epsilon_decay
-        self.epsilon_min = epsilon_min
 
         # environment.py의 move() 메서드와 호환되는 2장 Agent 구조
         self.pos = np.array(env.start_position)
@@ -76,8 +73,3 @@ class QLearningAgent:
         target = reward + self.gamma * next_q
 
         self.q_table[row, col, action] += self.learning_rate * (target - now_q)
-
-    def decay_epsilon(self):
-        # 매 에피소드 종료 시점마다 지수 형태로 감쇄하여 epsilon_min 하한선까지 decay
-        if self.epsilon > self.epsilon_min:
-            self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
